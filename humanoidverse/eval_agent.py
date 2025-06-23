@@ -158,7 +158,7 @@ def main(override_config: OmegaConf):
     algo.setup()
     algo.load(config.checkpoint)
 
-    EXPORT_POLICY = False
+    EXPORT_POLICY = True
     EXPORT_ONNX = True
 
     checkpoint_path = str(checkpoint)

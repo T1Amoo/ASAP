@@ -14,7 +14,7 @@ num_envs: 4096
 
 ### Checkpoint logic
 auto_load_latest: False
-checkpoint: null
+checkpoint: /home/hiyio/ASAP/logs/MotionTracking/20250617_134652-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/model_28700.pt
 
 ### Naming and dir structure
 project_name: TEST
