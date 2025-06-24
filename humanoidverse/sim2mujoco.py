@@ -37,8 +37,8 @@ if __name__ == "__main__":
     KD_SCALE = 1
     #policy_path = "/home/zsq/ASAP/logs/MotionTracking/20250423_235448-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/exported/model_11500.onnx"
     #policy_path = "/home/zsq/ASAP/logs/MotionTracking/20250504_092036-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/exported/model_11500.onnx"
-    policy_path = "/home/hiyio/ASAP/logs/MotionTracking/20250617_134652-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/exported/model_28700.onnx"
-    xml_path = "/home/hiyio/ASAP/humanoidverse/data/robots/g1/g1_29dof_anneal_23dof.xml"
+    policy_path = "/home/hiyio/ASAP/model_28700.onnx"
+    xml_path = "humanoidverse/data/robots/g1/g1_29dof_anneal_23dof_copy.xml"
 
     print("policy_path: ", policy_path)
     print("xml_path: ", xml_path)
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     control_interval = 0.005#gym中每次施加力矩的周期
     control_decimation =4  #每3个控制周期4个时间步
     fps = 200
-    dt=0.02
+    dt= 0.02
     counter = 0
     num_actions = 23
     motion_length=3.933
