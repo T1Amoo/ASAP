@@ -5,38 +5,19 @@ import numpy as np
 import torch
 import onnx
 import onnxruntime
-import argparse
 
 def quat_rotate_inverse(q, v):
-    '''
-    Args: 
-        q: quaternion, shape (4,)
-        v: vector, shape (3,)
-    Returns: 
-        rotated vector, shape (3,)
+    # q 是四元数，v 是三维向量
+    q_w = q[-1] # 四元数的实部
+    q_vec = q[:3] # 四元数的虚部（向量部分）
 
-    Do cooridinate transformation from world to local frame
-    '''
-    q_w = q[-1] 
-    q_vec = q[:3] 
-
+    # 计算旋转后的向量
     a = v * (2.0 * q_w ** 2 - 1.0)
     b = 2.0 * q_w * np.cross(q_vec, v)
     c = 2.0 * q_vec * np.dot(q_vec, v)
     return a - b + c
 
 def pd_control(kps, actions_scaled, default_angles, dof_pos, kds, dof_vel):
-    '''
-    Args:
-        kps: p gains, shape (n_dof,)
-        kds: d gains, shape (n_dof,)
-        actions_scaled: policy outputs
-        default_angles: init state
-        dof_pos: current joint positions, shape (n_dof,)
-        dof_vel: current joint velocities, shape (n_dof,)
-    Returns:
-        torques: cliped computed torques, in [-torque_limits, torque_limits],shape (n_dof,)
-        '''
     pos=actions_scaled + default_angles
     #pos = np.clip(pos, -dof_pos_limit_up, dof_pos_limit_up)
     torques = kps * KP_SCALE *(pos - dof_pos) - kds * KD_SCALE * dof_vel
@@ -50,22 +31,22 @@ def pd_control(kps, actions_scaled, default_angles, dof_pos, kds, dof_vel):
     torque_limits = torch.from_numpy(np.array(torque_limits))
     return torch.clip(torques, -torque_limits, torque_limits)
 
-if __name__ == "__main__":
+if __name__ == "main":
 
     KP_SCALE = 1
     KD_SCALE = 1
+    #policy_path = "/home/zsq/ASAP/logs/MotionTracking/20250423_235448-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/exported/model_11500.onnx"
+    #policy_path = "/home/zsq/ASAP/logs/MotionTracking/20250504_092036-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/exported/model_11500.onnx"
+    policy_path = "/home/hiyio/ASAP/logs/MotionTracking/20250627_092649-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/exported/model_7900.onnx"
+    xml_path = "/home/zsq/ASAP/humanoidverse/data/robots/g1/g1_29dof_anneal_23dof_raw.xml"
 
-    argparse.add_argument('--xml_path', type=str, default='/home/hiyio/ASAP/g1_29dof_anneal_23dof.xml', help='Path to the mujoco xml file')
-    argparse.add_argument('--policy_path', type=str, default=None, help='Path to the onnx policy file')
-    args = argparse.parse_args()
-
-    policy_path = args.policy_path
-    xml_path = args.xml_path
+    print("policy_path: ", policy_path)
+    print("xml_path: ", xml_path)
 
     control_interval = 0.005#gym中每次施加力矩的周期
     control_decimation =4  #每3个控制周期4个时间步
     fps = 200
-    dt= 0.02
+    dt=0.02
     counter = 0
     num_actions = 23
     motion_length=3.933
@@ -87,23 +68,23 @@ if __name__ == "__main__":
                                 0.0, 0.0, 0.0, 
                                 0.0, 0.0, 0.0, 0.0, 
                                 0.0, 0.0, 0.0, 0.0 ], dtype=np.float32)
-    
-    # default_angles_before_env=np.array([0.0535,  0.0308,  0.1582, -0.1208,  0.0138, -0.0276,
-    #     -0.0255, -0.0912,  0.0475, -0.0562, -0.0423, -0.0141,  0.0772, -0.0046,
-    #     -0.0338,  0.3369,  0.2924, -0.0845,  0.6023,  0.2206, -0.2428,  0.0613,
-    #     0.5796],dtype=np.float32)
-    # default_angles_motion_res=np.array([ 
-    # -0.1040,  0.0146,  0.2722,  0.0424,  0.0014,  0.0000, -0.2361, -0.1315,
-    #     -0.0481,  0.0927,  0.0043,  0.0000,  0.2081, -0.0671, -0.2738,  0.2576,
-    #     0.3911, -0.4247,  0.9946,  0.2217, -0.3084,  0.2673,  0.9876],dtype=np.float32)
-    # default_vel_before_env = np.array([0.3334,  0.2569,  0.8968, -0.2103,  0.1112, -0.3184,  0.0372,
-    #     0.3178,  1.1418,  0.6026, -0.4792, -0.2446,  0.1068, -0.0358,  0.5959,
-    #     0.1269, -0.1776,  0.5440, -1.3886,  0.1853,  0.2840, -0.6984, -1.5377],dtype=np.float32)
-    # default_vel_motion_res = np.array([-0.0275, -0.0459,  0.0235, -0.0290, -0.0019,  0.0000, -0.0083,  0.0066,
-    #     0.0007,  0.0030, -0.0002,  0.0000, -0.0481, -0.0216, -0.0235, -0.0966,
-    #     -0.1212, -0.0390, -0.0361, -0.0507,  0.1070,  0.0176, -0.0074],dtype=np.float32)
-    # default_base_ang_vel_before_env=np.array([0.1505,
-    #     -1.4219, -0.9871], dtype=np.float32)
+    default_angles_before_env=np.array([0.0535,  0.0308,  0.1582, -0.1208,  0.0138, -0.0276,
+        -0.0255, -0.0912,  0.0475, -0.0562, -0.0423, -0.0141,  0.0772, -0.0046,
+        -0.0338,  0.3369,  0.2924, -0.0845,  0.6023,  0.2206, -0.2428,  0.0613,
+        0.5796],dtype=np.float32)
+    default_angles_motion_res=np.array([ 
+    -0.1040,  0.0146,  0.2722,  0.0424,  0.0014,  0.0000, -0.2361, -0.1315,
+        -0.0481,  0.0927,  0.0043,  0.0000,  0.2081, -0.0671, -0.2738,  0.2576,
+        0.3911, -0.4247,  0.9946,  0.2217, -0.3084,  0.2673,  0.9876],dtype=np.float32)
+
+    default_vel_before_env = np.array([0.3334,  0.2569,  0.8968, -0.2103,  0.1112, -0.3184,  0.0372,
+        0.3178,  1.1418,  0.6026, -0.4792, -0.2446,  0.1068, -0.0358,  0.5959,
+        0.1269, -0.1776,  0.5440, -1.3886,  0.1853,  0.2840, -0.6984, -1.5377],dtype=np.float32)
+    default_vel_motion_res = np.array([-0.0275, -0.0459,  0.0235, -0.0290, -0.0019,  0.0000, -0.0083,  0.0066,
+        0.0007,  0.0030, -0.0002,  0.0000, -0.0481, -0.0216, -0.0235, -0.0966,
+        -0.1212, -0.0390, -0.0361, -0.0507,  0.1070,  0.0176, -0.0074],dtype=np.float32)
+    default_base_ang_vel_before_env=np.array([0.1505,
+        -1.4219, -0.9871], dtype=np.float32)
 
     kps = np.array([ 100, 100, 100, 200, 20, 20, 
                     100, 100, 100, 200, 20, 20, 
@@ -146,6 +127,7 @@ if __name__ == "__main__":
     m = mujoco.MjModel.from_xml_path(xml_path)
     d = mujoco.MjData(m)
 
+
     m.opt.timestep = control_interval
     # 设置初始关节位置和速度
     d.qpos[7:7 + len(target_dof_pos)] = default_angles  # 设置关节位置
@@ -155,6 +137,7 @@ if __name__ == "__main__":
     # d.qvel[:3] = [0.0, 0.0, 0.0]  # 根部线速度
     # d.qvel[3:6] = [0.0, 0.0, 0.0]  # 根部角速度
     test_flag=False
+
 
     with mujoco.viewer.launch_passive(m, d) as viewer:
         wait_length = 0.05    
@@ -171,12 +154,31 @@ if __name__ == "__main__":
             quat = d.qpos[3:7]
             quat = np.concatenate((quat[1:], quat[:1])) 
 
+
+            # action = np.clip(action, -clip_action_limit, clip_action_limit)
+            # actions_scaled = action * 0.25
+            # for i in range(control_decimation):
+            #     step_start = time.time()                    
+                
+            #     torque = pd_control(kps, actions_scaled, target_dof_pos, qj, kds, dqj)
+            #     d.ctrl[:] = torque
+            #     mujoco.mj_step(m, d)
+
+            #     if TIMESTEP:
+            #         time_until_next_step = m.opt.timestep - (time.time() - step_start)
+            #         if time_until_next_step > 0:
+            #             time.sleep(time_until_next_step)
+            # viewer.sync()
+
+
             lin_vel = d.qvel[:3]
             ang_vel = d.qvel[3:6]
+            # 限制线速度和角速度
             max_linear_velocity = 1000.0
             max_angular_velocity = 1000.0
+            
 
-            projected_gravity = quat_rotate_inverse(quat, np.array([0,0,-1]))
+            projected_gravity = quat_rotate_inverse(quat, np.array([0,0,-1]))######重要
             dof_pos = (qj-default_angles) * 1.0
             dof_vel = dqj * 0.05
             base_ang_vel = ang_vel * 0.25
