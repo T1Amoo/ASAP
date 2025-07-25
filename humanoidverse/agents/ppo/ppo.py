@@ -152,18 +152,46 @@ class PPO(BaseAlgo):
                 logger.info(f"Actor Learning rate: {self.actor_learning_rate}")
                 logger.info(f"Critic Learning rate: {self.critic_learning_rate}")
             self.current_learning_iteration = loaded_dict["iter"]
+            
+            # ✅ curriculum 状态恢复
+            if "curriculum" in loaded_dict:
+                for key, val in loaded_dict["curriculum"].items():
+                    if hasattr(self.env, key) and val is not None:
+                        setattr(self.env, key, val)
+                logger.info("[Curriculum] Restored curriculum state from checkpoint.")
+            else:
+                logger.warning("[Curriculum] No curriculum state found in checkpoint.")
             return loaded_dict["infos"]
 
     def save(self, path, infos=None):
         logger.info(f"Saving checkpoint to {path}")
-        torch.save({
+        
+        save_dict = {
             'actor_model_state_dict': self.actor.state_dict(),
             'critic_model_state_dict': self.critic.state_dict(),
             'actor_optimizer_state_dict': self.actor_optimizer.state_dict(),
             'critic_optimizer_state_dict': self.critic_optimizer.state_dict(),
             'iter': self.current_learning_iteration,
             'infos': infos,
-        }, path)
+        }
+
+        # ✅ 如果环境启用了 curriculum，保存其状态
+        if hasattr(self.env, 'reward_penalty_scale'):
+            save_dict['curriculum'] = {
+                "reward_penalty_scale": self.env.reward_penalty_scale,
+                "soft_dof_pos_limit": getattr(self.env, "soft_dof_pos_limit", None),
+                "soft_dof_vel_limit": getattr(self.env, "soft_dof_vel_limit", None),
+                "soft_torque_limit": getattr(self.env, "soft_torque_limit", None),
+                "soft_dof_pos_curriculum_value": getattr(self.env, "soft_dof_pos_curriculum_value", None),
+                "soft_dof_vel_curriculum_value": getattr(self.env, "soft_dof_vel_curriculum_value", None),
+                "soft_torque_curriculum_value": getattr(self.env, "soft_torque_curriculum_value", None),
+                "reward_penalty_level": getattr(self.env, "reward_penalty_level", None),
+                "reward_penalty_degree": getattr(self.env, "reward_penalty_degree", None),
+                "average_episode_length": getattr(self.env, "average_episode_length", None),
+            }
+
+        torch.save(save_dict, path)
+
         
     def learn(self):
         if self.init_at_random_ep_len:
