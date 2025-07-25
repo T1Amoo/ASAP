@@ -37,7 +37,7 @@ if __name__ == "main":
     KD_SCALE = 1
     #policy_path = "/home/zsq/ASAP/logs/MotionTracking/20250423_235448-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/exported/model_11500.onnx"
     #policy_path = "/home/zsq/ASAP/logs/MotionTracking/20250504_092036-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/exported/model_11500.onnx"
-    policy_path = "/home/hiyio/ASAP/logs/MotionTracking/20250627_092649-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/exported/model_7900.onnx"
+    policy_path = "/home/hiyio/ASAP/logs/MotionTracking/20250630_150448-MotionTracking_CR7-motion_tracking-g1_29dof_anneal_23dof/exported/model_118900.onnx"
     xml_path = "/home/zsq/ASAP/humanoidverse/data/robots/g1/g1_29dof_anneal_23dof_raw.xml"
 
     print("policy_path: ", policy_path)
