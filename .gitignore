@@ -41,7 +41,7 @@ wandb/
 __pycache__
 
 roboverse/data/motions
-*.pkl
+#*.pkl
 *.pt
 
 *.TXT
